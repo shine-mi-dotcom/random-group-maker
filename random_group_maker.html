@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>랜덤 조 배정</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
+<style>
+  :root {
+    --purple: #534AB7;
+    --purple-dark: #3C3489;
+    --purple-light: #EEEDFE;
+    --coral: #D85A30;
+    --coral-light: #FAECE7;
+    --coral-border: #F0997B;
+    --coral-text: #993C1D;
+    --text-primary: #1a1a1a;
+    --text-secondary: #6b6b6b;
+    --text-tertiary: #aaaaaa;
+    --bg: #f5f4f8;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.1);
+    --border-mid: rgba(0,0,0,0.18);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1rem;
+  }
+
+  .wrapper {
+    width: 100%;
+    max-width: 520px;
+  }
+
+  /* ── pages ── */
+  .page { display: none; flex-direction: column; align-items: center; }
+  .page.active { display: flex; }
+
+  /* ── page 1 ── */
+  .hero {
+    text-align: center;
+    padding: 3rem 1rem;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    width: 100%;
+  }
+  .hero-icon {
+    width: 72px; height: 72px;
+    background: var(--purple-light);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 32px;
+  }
+  .hero h1 { font-size: 24px; font-weight: 700; line-height: 1.4; margin-bottom: 0.6rem; }
+  .hero p { font-size: 14px; color: var(--text-secondary); margin-bottom: 2rem; line-height: 1.6; }
+  .hero-meta {
+    display: flex; justify-content: center; gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .hero-meta span {
+    font-size: 12px; color: var(--text-tertiary);
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* ── card ── */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    padding: 1.5rem;
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  .card-title {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-tertiary);
+    margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* ── form ── */
+  .form-row { margin-bottom: 1.25rem; }
+  .form-row:last-child { margin-bottom: 0; }
+  .form-row label {
+    display: block; font-size: 13px; font-weight: 600;
+    color: var(--text-secondary); margin-bottom: 6px;
+  }
+  .input-wrap { position: relative; }
+  .input-wrap .unit {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    font-size: 13px; color: var(--text-tertiary);
+  }
+  input[type=number], input[type=text] {
+    width: 100%;
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    font-size: 16px; font-weight: 600;
+    color: var(--text-primary);
+    background: #fafafa;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input[type=number] { text-align: center; }
+  input[type=text] { text-align: left; font-weight: 500; }
+  input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(83,74,183,0.12); background: #fff; }
+  .hint { font-size: 12px; color: var(--text-tertiary); margin-top: 5px; }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+
+  /* ── absent chips ── */
+  .absent-row { display: flex; gap: 8px; }
+  .absent-row input { flex: 1; }
+  .add-btn {
+    background: var(--surface);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    padding: 0 14px;
+    font-size: 13px; font-weight: 600; color: var(--text-secondary);
+    cursor: pointer; white-space: nowrap;
+    font-family: inherit;
+    transition: background 0.12s;
+  }
+  .add-btn:hover { background: var(--bg); }
+
+  .chips-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; min-height: 10px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--coral-light); color: var(--coral-text);
+    border: 0.5px solid var(--coral-border);
+    border-radius: 20px; padding: 4px 10px;
+    font-size: 13px; font-weight: 600;
+  }
+  .chip-del {
+    background: none; border: none; cursor: pointer;
+    color: var(--coral-text); display: flex; align-items: center;
+    padding: 0; font-size: 13px; line-height: 1;
+  }
+
+  /* ── buttons ── */
+  .btn-primary {
+    width: 100%; padding: 14px;
+    background: var(--purple); color: #fff;
+    border: none; border-radius: var(--radius-sm);
+    font-size: 16px; font-weight: 700; font-family: inherit;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: -0.01em;
+  }
+  .btn-primary:hover { background: var(--purple-dark); }
+  .btn-primary:active { transform: scale(0.98); }
+
+  .btn-ghost {
+    background: var(--surface);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    padding: 11px 18px;
+    font-size: 14px; font-weight: 600; font-family: inherit;
+    color: var(--text-secondary);
+    cursor: pointer; display: flex; align-items: center; gap: 7px;
+    transition: background 0.12s, transform 0.1s;
+  }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-ghost:active { transform: scale(0.98); }
+
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; width: 100%; }
+  .btn-row .btn-ghost { flex: 1; justify-content: center; }
+
+  /* ── nav ── */
+  .nav-back {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 13px; font-weight: 600; color: var(--text-tertiary);
+    background: none; border: none; cursor: pointer; font-family: inherit;
+    margin-bottom: 1.5rem; align-self: flex-start;
+    transition: color 0.12s;
+  }
+  .nav-back:hover { color: var(--text-primary); }
+
+  /* ── steps ── */
+  .steps { display: flex; gap: 6px; margin-bottom: 1.5rem; align-self: center; }
+  .step-dot { width: 6px; height: 6px; border-radius: 3px; background: var(--border-mid); transition: all 0.2s; }
+  .step-dot.on { width: 20px; background: var(--purple); }
+
+  /* ── section label ── */
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--purple);
+    margin-bottom: 0.75rem;
+  }
+  .page-heading { font-size: 20px; font-weight: 700; margin-bottom: 1.5rem; color: var(--text-primary); }
+
+  /* ── error ── */
+  .err { font-size: 13px; color: #c0392b; margin-bottom: 0.75rem; min-height: 18px; font-weight: 500; }
+
+  /* ── result ── */
+  .result-summary {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    width: 100%;
+  }
+  .summary-row { display: flex; align-items: center; justify-content: space-between; }
+  .summary-stat { text-align: center; }
+  .summary-stat .num { font-size: 22px; font-weight: 700; color: var(--purple); }
+  .summary-stat .lbl { font-size: 11px; color: var(--text-tertiary); font-weight: 500; margin-top: 2px; }
+  .summary-divider { width: 1px; height: 36px; background: var(--border); }
+
+  .absent-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--coral-light); color: var(--coral-text);
+    border: 0.5px solid var(--coral-border);
+    border-radius: 20px; padding: 5px 12px;
+    font-size: 12px; font-weight: 600;
+    margin-top: 10px;
+  }
+
+  .groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  .group-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+  }
+  .group-header {
+    display: flex; align-items: center; gap: 7px;
+    margin-bottom: 10px;
+  }
+  .group-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .group-name { font-size: 13px; font-weight: 700; }
+  .group-count { font-size: 11px; color: var(--text-tertiary); margin-left: auto; font-weight: 500; }
+  .member-list { display: flex; flex-wrap: wrap; gap: 5px; }
+  .member {
+    font-size: 13px; font-weight: 600;
+    background: var(--bg);
+    border-radius: 16px; padding: 3px 10px;
+    color: var(--text-primary);
+  }
+
+  @media (max-width: 400px) {
+    .groups-grid { grid-template-columns: repeat(2, 1fr); }
+    .hero h1 { font-size: 20px; }
+    .summary-stat .num { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- PAGE 1: 시작 -->
+  <div id="p1" class="page active">
+    <div class="hero">
+      <div class="hero-icon">🎲</div>
+      <h1>오늘의 조를<br>배정할까요?</h1>
+      <p>결석 학생을 제외하고<br>클릭 한 번으로 랜덤 모둠 배정이 완료됩니다.</p>
+      <div class="hero-meta">
+        <span><i class="ti ti-users"></i> 모둠 자동 분배</span>
+        <span><i class="ti ti-user-off"></i> 결석 학생 제외</span>
+        <span><i class="ti ti-refresh"></i> 즉시 재배정</span>
+      </div>
+      <button class="btn-primary" onclick="goTo(2)">
+        <i class="ti ti-sparkles"></i> 조 배정 시작하기
+      </button>
+    </div>
+  </div>
+
+  <!-- PAGE 2: 설정 -->
+  <div id="p2" class="page">
+    <button class="nav-back" onclick="goTo(1)">
+      <i class="ti ti-arrow-left"></i> 처음으로
+    </button>
+    <div class="steps">
+      <div class="step-dot"></div>
+      <div class="step-dot on"></div>
+      <div class="step-dot"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><i class="ti ti-users" style="font-size:15px"></i> 학급 정보</div>
+      <div class="form-row">
+        <label for="total">전체 인원 수</label>
+        <div class="input-wrap">
+          <input type="number" id="total" min="2" max="100" placeholder="24" />
+          <span class="unit">명</span>
+        </div>
+        <p class="hint">번호 1번부터 순서대로 부여된 전체 학생 수</p>
+      </div>
+      <div class="form-row">
+        <label for="groups">모둠 수</label>
+        <div class="input-wrap">
+          <input type="number" id="groups" min="2" max="20" placeholder="4" />
+          <span class="unit">모둠</span>
+        </div>
+        <p class="hint">나눌 모둠의 수</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><i class="ti ti-user-off" style="font-size:15px"></i> 결석 학생 <span style="font-weight:400; color:var(--text-tertiary); text-transform:none; letter-spacing:0; font-size:11px">(선택)</span></div>
+      <div class="form-row">
+        <label for="absent-input">결석 번호 입력</label>
+        <div class="absent-row">
+          <input type="text" id="absent-input" placeholder="예) 3, 7, 15" onkeydown="handleKey(event)" />
+          <button class="add-btn" onclick="addAbsent()">추가</button>
+        </div>
+        <p class="hint">쉼표 또는 Enter로 여러 번호 한 번에 입력 가능</p>
+        <div class="chips-wrap" id="chips"></div>
+      </div>
+    </div>
+
+    <div class="err" id="err"></div>
+
+    <button class="btn-primary" onclick="doAssign()">
+      <i class="ti ti-sparkles"></i> 랜덤 배정하기
+    </button>
+  </div>
+
+  <!-- PAGE 3: 결과 -->
+  <div id="p3" class="page">
+    <button class="nav-back" onclick="goTo(2)">
+      <i class="ti ti-arrow-left"></i> 설정으로
+    </button>
+    <div class="steps">
+      <div class="step-dot"></div>
+      <div class="step-dot"></div>
+      <div class="step-dot on"></div>
+    </div>
+
+    <div class="result-summary">
+      <div class="summary-row">
+        <div class="summary-stat">
+          <div class="num" id="s-total">-</div>
+          <div class="lbl">전체 인원</div>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-stat">
+          <div class="num" id="s-absent" style="color:var(--coral)">-</div>
+          <div class="lbl">결석</div>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-stat">
+          <div class="num" id="s-active">-</div>
+          <div class="lbl">출석</div>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-stat">
+          <div class="num" id="s-groups">-</div>
+          <div class="lbl">모둠 수</div>
+        </div>
+      </div>
+      <div id="absent-badge-wrap"></div>
+    </div>
+
+    <div class="groups-grid" id="groups-grid"></div>
+
+    <div class="btn-row" style="margin-top: 0.25rem;">
+      <button class="btn-ghost" onclick="doAssign(true)">
+        <i class="ti ti-refresh"></i> 다시 뽑기
+      </button>
+      <button class="btn-ghost" onclick="goTo(2)">
+        <i class="ti ti-settings"></i> 설정 변경
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const COLORS = [
+  { dot: '#7F77DD', name: '#534AB7' },
+  { dot: '#1D9E75', name: '#0F6E56' },
+  { dot: '#D85A30', name: '#993C1D' },
+  { dot: '#D4537E', name: '#993556' },
+  { dot: '#378ADD', name: '#185FA5' },
+  { dot: '#639922', name: '#3B6D11' },
+  { dot: '#BA7517', name: '#854F0B' },
+  { dot: '#E24B4A', name: '#A32D2D' },
+  { dot: '#888780', name: '#5F5E5A' },
+  { dot: '#0F6E56', name: '#085041' },
+];
+
+let absentSet = new Set();
+
+function goTo(n) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('p' + n).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter') { e.preventDefault(); addAbsent(); }
+}
+
+function addAbsent() {
+  const input = document.getElementById('absent-input');
+  const val = input.value.trim();
+  if (!val) return;
+  const total = parseInt(document.getElementById('total').value) || 0;
+  const err = document.getElementById('err');
+  let anyErr = false;
+  val.split(/[,，\s]+/).filter(Boolean).forEach(p => {
+    const n = parseInt(p);
+    if (!isNaN(n) && n >= 1) {
+      if (total > 0 && n > total) anyErr = true;
+      else absentSet.add(n);
+    }
+  });
+  err.textContent = anyErr ? `전체 인원(${total}명) 범위 내 번호만 입력할 수 있어요.` : '';
+  input.value = '';
+  renderChips();
+}
+
+function removeAbsent(n) {
+  absentSet.delete(n);
+  renderChips();
+}
+
+function renderChips() {
+  const wrap = document.getElementById('chips');
+  wrap.innerHTML = '';
+  [...absentSet].sort((a,b)=>a-b).forEach(n => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.innerHTML = `${n}번 <button class="chip-del" onclick="removeAbsent(${n})" aria-label="${n}번 제거">✕</button>`;
+    wrap.appendChild(chip);
+  });
+}
+
+function doAssign(fromResult) {
+  const t = parseInt(document.getElementById('total').value);
+  const g = parseInt(document.getElementById('groups').value);
+  const err = document.getElementById('err');
+  err.textContent = '';
+
+  if (!t || !g || t < 2 || g < 2) {
+    err.textContent = '인원 수와 모둠 수를 올바르게 입력해 주세요.';
+    if (!fromResult) return; else { goTo(2); return; }
+  }
+
+  const active = Array.from({ length: t }, (_, i) => i + 1).filter(n => !absentSet.has(n));
+
+  if (active.length < g) {
+    err.textContent = `출석 인원(${active.length}명)이 모둠 수(${g})보다 적어요.`;
+    if (!fromResult) return; else { goTo(2); return; }
+  }
+
+  for (let i = active.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [active[i], active[j]] = [active[j], active[i]];
+  }
+
+  const result = Array.from({ length: g }, () => []);
+  active.forEach((n, i) => result[i % g].push(n));
+  result.forEach(r => r.sort((a,b) => a-b));
+
+  document.getElementById('s-total').textContent = t;
+  document.getElementById('s-absent').textContent = absentSet.size;
+  document.getElementById('s-active').textContent = active.length;
+  document.getElementById('s-groups').textContent = g;
+
+  const badgeWrap = document.getElementById('absent-badge-wrap');
+  if (absentSet.size > 0) {
+    const list = [...absentSet].sort((a,b)=>a-b).map(n=>n+'번').join(', ');
+    badgeWrap.innerHTML = `<div class="absent-badge"><i class="ti ti-user-off" style="font-size:13px"></i> 결석 제외: ${list}</div>`;
+  } else {
+    badgeWrap.innerHTML = '';
+  }
+
+  const grid = document.getElementById('groups-grid');
+  grid.innerHTML = '';
+  result.forEach((members, i) => {
+    const c = COLORS[i % COLORS.length];
+    const div = document.createElement('div');
+    div.className = 'group-card';
+    div.innerHTML = `
+      <div class="group-header">
+        <span class="group-dot" style="background:${c.dot}"></span>
+        <span class="group-name" style="color:${c.name}">${i+1}모둠</span>
+        <span class="group-count">${members.length}명</span>
+      </div>
+      <div class="member-list">
+        ${members.map(m=>`<span class="member">${m}번</span>`).join('')}
+      </div>`;
+    grid.appendChild(div);
+  });
+
+  goTo(3);
+}
+</script>
+</body>
+</html>
